@@ -38,7 +38,7 @@ Tagline: _"The solo professional's tool that generates your BIR form in 60 secon
 - Frontend: React + React Router + Tailwind + shadcn/ui + Phosphor Icons
 - Design: Cabinet Grotesk + Manrope, warm sand / deep olive / terracotta palette
 
-## Implemented (Feb 26, 2026 — MVP + Phase 2)
+## Implemented (Feb 26, 2026 — MVP + Phase 2 + Phase 3)
 ### Backend
 - ✅ JWT email/password auth (register, login, logout, refresh, /me, forgot/reset)
 - ✅ Emergent Google SSO (POST /api/auth/google/session) with httpOnly session cookie
@@ -50,11 +50,19 @@ Tagline: _"The solo professional's tool that generates your BIR form in 60 secon
 - ✅ Deadline calendar (1701Q Q1/Q2/Q3 + 2551Q Q1–Q4 for graduated non-VAT)
 - ✅ AI Tax Assistant (Claude Sonnet 4.5)
 - ✅ Admin: MRR, churn, user count, BIR rules editor, user list
-- ✅ Mock billing (Solo / Pro / Reseller plans, PayMongo-ready structure)
-- ✅ **APScheduler daily 09:00 Asia/Manila** reminder cron — sends 30/7/1-day BIR deadline emails via Resend (no-op until `RESEND_API_KEY` is set; self-healing dedup logic)
-- ✅ **POST /api/admin/run-reminders** manual trigger endpoint (admin-only)
-- ✅ **GET /api/forms/{id}/export.pdf** — reportlab BIR worksheet PDF
-- ✅ **GET /api/forms/{id}/export.xml** — eBIRForms-style XML envelope
+- ✅ APScheduler daily 09:00 Asia/Manila reminder cron + `/api/admin/run-reminders`
+- ✅ GET /api/forms/{id}/export.pdf (reportlab) + export.xml (eBIRForms-style)
+- ✅ **PayMongo native recurring subscriptions** with mock fallback when keys empty:
+  - GET /api/billing/config (provider + public key)
+  - POST /api/billing/checkout (creates PayMongo customer + subscription + payment_intent OR mock)
+  - POST /api/billing/attach-payment (attaches frontend-tokenized card to payment intent, returns 3DS URL)
+  - POST /api/billing/cancel (cancels upstream + locally)
+  - POST /api/billing/webhook/paymongo (HMAC-SHA256 signature verification, audit log, status mapping)
+- ✅ **User.managed_by_cpa_id** optional/nullable field — non-breaking foundation for Phase 4 reseller dashboard
+
+### Frontend
+- ✅ Pricing page now opens **PayMongoCheckout modal** with PCI-safe card tokenization (public-key only, card data never touches our backend)
+- ✅ Falls back to instant mock activation when keys empty
 
 ### Frontend
 - ✅ Landing page (hero with Tetris grid, 3-stat band, how-it-works, audience showcase, retention lock-in band, CPA reseller, footer CTA)
@@ -72,14 +80,22 @@ Tagline: _"The solo professional's tool that generates your BIR form in 60 secon
 
 ### Testing
 - ✅ Backend Phase 1: 30/30 tests passed
-- ✅ Backend Phase 2: 13 new tests passed (43/43 total — zero regressions)
+- ✅ Backend Phase 2: 13 new tests passed
+- ✅ Backend Phase 3: 23 new tests passed (66/66 total — zero regressions)
 
 ## Backlog
 ### P0 (next)
-- [ ] **Add `RESEND_API_KEY` to env** — email sending is fully wired; reminders flip from `disabled` → `sent` automatically (dedup is self-healing)
-- [ ] PayMongo live swap (replace mock checkout, add webhook handler)
+- [ ] **Add `RESEND_API_KEY`** — email sending self-heals (`disabled` → `sent`)
+- [ ] **Add PayMongo keys** (`PAYMONGO_SECRET_KEY`, `PAYMONGO_PUBLIC_KEY`, `PAYMONGO_WEBHOOK_SECRET`) — `/billing/config` flips to live; first ₱499 charge end-to-end
+- [ ] Annual 1701 form + payroll 1604C module (Phase 4)
 
 ### P1
+- [ ] Reseller / CPA dashboard (schema already supports `managed_by_cpa_id`)
+- [ ] In-app support ticket form + email integration
+- [ ] Stripe USD secondary billing for diaspora users
+
+### P2 (skipped per founder)
+- ~~SEO content hub in-app~~ — handled outside as a separate blog
 - [ ] Payroll module (compute net pay, 1604C summary)
 - [ ] Reseller/CPA dashboard (manage 25 client filings from one screen)
 - [ ] Annual 1701 form support

@@ -5,17 +5,21 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CheckCircleIcon, ArrowRightIcon } from "@phosphor-icons/react";
+import PayMongoCheckout from "@/components/PayMongoCheckout";
 
 export default function Pricing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [plans, setPlans] = useState({});
+  const [config, setConfig] = useState({ provider: "mock", public_key: "" });
   const [busy, setBusy] = useState(false);
+  const [pmSession, setPmSession] = useState(null);
 
   useEffect(() => {
     (async () => {
-      const { data } = await api.get("/billing/plans");
-      setPlans(data);
+      const [p, c] = await Promise.all([api.get("/billing/plans"), api.get("/billing/config")]);
+      setPlans(p.data);
+      setConfig(c.data);
     })();
   }, []);
 
@@ -27,7 +31,13 @@ export default function Pricing() {
     setBusy(true);
     try {
       const { data } = await api.post("/billing/checkout", { plan });
-      if (data.redirect_url) {
+      if (data.provider === "paymongo") {
+        setPmSession({
+          ...data,
+          email: user.email,
+          name: user.name,
+        });
+      } else if (data.redirect_url) {
         window.location.href = data.redirect_url;
       } else {
         toast.success(data.message || "Subscribed!");
@@ -120,6 +130,18 @@ export default function Pricing() {
       <section className="bg-olive-900 text-sand-50 py-14 text-center">
         <p className="font-display text-xl">Questions? Email <a href="mailto:hello@birfilipino.app" className="underline">hello@birfilipino.app</a></p>
       </section>
+
+      <PayMongoCheckout
+        open={!!pmSession}
+        onClose={() => setPmSession(null)}
+        session={pmSession}
+        publicKey={config.public_key}
+        onSuccess={() => {
+          setPmSession(null);
+          toast.success("Payment received. Redirecting to dashboard…");
+          setTimeout(() => navigate("/dashboard"), 800);
+        }}
+      />
     </div>
   );
 }

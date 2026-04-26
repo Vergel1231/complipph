@@ -23,9 +23,13 @@ class User(BaseModel):
     auth_provider: Literal["password", "google"] = "password"
     role: Literal["user", "admin", "reseller"] = "user"
     onboarded: bool = False
-    subscription_status: Literal["trial", "active", "past_due", "canceled"] = "trial"
+    subscription_status: Literal["trial", "active", "past_due", "canceled", "incomplete"] = "trial"
     subscription_plan: Literal["solo", "pro", "reseller"] = "solo"
     subscription_started_at: Optional[datetime] = None
+    # Reseller relationship — non-breaking, optional. If a CPA "manages" this
+    # user, their CPA reseller user_id lives here. Used by the future Phase 4
+    # Reseller dashboard. Null for direct customers.
+    managed_by_cpa_id: Optional[str] = None
     created_at: datetime = Field(default_factory=_now)
 
 
@@ -157,5 +161,8 @@ class Subscription(BaseModel):
     amount_php: float
     status: str = "active"
     provider: str = "mock"  # will become "paymongo"
+    paymongo_subscription_id: Optional[str] = None
+    paymongo_customer_id: Optional[str] = None
+    paymongo_plan_id: Optional[str] = None
     started_at: datetime = Field(default_factory=_now)
     next_billing_at: Optional[datetime] = None

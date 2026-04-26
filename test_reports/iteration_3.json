@@ -1,0 +1,43 @@
+{
+  "summary": "Phase 3 backend testing complete. Added 23 new pytest cases (test_bir_phase3.py) covering PayMongo live billing layer with mock fallback when keys are empty. Combined with Phase 1+2, full regression suite is 66/66 passing — zero regressions on prior 43 tests. All 14 review-request bullets verified: /billing/config provider='mock'+public_key='', mock checkout activates subscription, auth gate (401), /attach-payment 400 when keys empty, /subscription returns active doc, /cancel propagates status, webhook accepted unverified in mock mode (with paymongo_events insert), webhook 200 with bad sig when secret empty, status mapping (cancelled/incomplete_cancelled→canceled, unpaid→past_due), invoice.paid creates payment + flips active, invoice.payment_failed flips past_due (user + sub), verify_webhook_signature helper unit-tested (valid te, valid li, mismatch, missing t, empty secret, all branches), and User.managed_by_cpa_id optional field defaults to None on new registrations + serializes correctly for legacy users without the field.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bir_backend.py",
+    "/app/backend/tests/test_bir_phase2.py",
+    "/app/backend/tests/test_bir_phase3.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_phase3.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "paymongo.py verify_webhook_signature: correctly uses hmac.compare_digest (timing-safe) and validates BOTH te (test) and li (live) signature variants; properly returns False on missing t=, missing secret, missing header, or signature mismatch. HMAC-SHA256 over '<timestamp>.<body>' matches PayMongo spec.",
+    "billing.py /webhook/paymongo: correctly conditional on PAYMONGO_WEBHOOK_SECRET being set — when empty (current state), accepts unverified and logs warning; when set, returns 403 on signature mismatch via verify_webhook_signature. Background task pattern (_process_webhook_event) keeps the route fast and is idempotent enough for retry-tolerant webhooks. Always responds 200 once signature passes (correct PayMongo retry semantic).",
+    "billing.py status_map: covers cancelled→canceled, incomplete_cancelled→canceled, unpaid→past_due, plus pass-through for active/incomplete/past_due. All four mapping rules verified end-to-end via parametrized webhook test.",
+    "billing.py /checkout: mock-fallback path is correctly preserved verbatim (provider='mock', status='active', updates user.subscription_status). PayMongo path persists status='incomplete' until webhook flips it — correct flow for SCA / 3DS card collection.",
+    "billing.py /attach-payment: correctly 400s with 'PayMongo not configured.' when keys empty — prevents accidental no-op in production once tier flips to live.",
+    "models.py User: managed_by_cpa_id is Optional[str] = None (non-breaking). Verified: new registrations return managed_by_cpa_id=null in /auth/register response AND legacy users (with the field $unset from Mongo) serialize cleanly via /auth/me without 500. Pydantic ConfigDict(extra='ignore') gives forward-compat for new fields.",
+    "models.py Subscription: paymongo_subscription_id, paymongo_customer_id, paymongo_plan_id are all Optional[str]=None — mock subs persist with these as null without serialization issues.",
+    "server.py: paymongo_plans (unique index on tier), paymongo_events, paymongo_payments collections all created at startup; webhook event-audit doc lands in paymongo_events on every /webhook hit (verified via document fetch in test_webhook_accepted_unverified_in_mock_mode).",
+    "Code-quality nit (low priority, not blocking): _process_webhook_event branches on event_type but does not record an explicit 'unhandled' marker — events outside the 4 handled types are persisted to paymongo_events but produce no further side-effect. Acceptable & safe; just worth a logger.info('unhandled webhook type=...') for ops visibility once live.",
+    "Code-quality nit (low priority): When webhook arrives BEFORE the local subscription doc exists (race condition between PayMongo subscription.activated and POST /checkout response persisting), the subscriptions.update_one matched_count==0 path silently drops the activation. In practice the local insert lands before the webhook, but a future hardening would queue/retry. Not a Phase 3 blocker.",
+    "Phase 1 carry-over still unresolved: backend/.env FRONTEND_URL points to stale preview host (8d9e0af4-…) different from active REACT_APP_BACKEND_URL (bir-filer.preview.emergentagent.com). Doesn't affect backend tests; only impacts return_url constructed inside /attach-payment when PayMongo eventually goes live. Recommend syncing once keys are populated."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_bir_phase3.py (NEW — 23 Phase 3 tests, includes signature-helper unit tests + webhook event end-to-end + User.managed_by_cpa_id field assertions)"
+  ],
+  "success_rate": {"backend": "100% (66/66, including 23 new Phase 3)", "frontend": "not tested (skipped per request)"},
+  "test_credentials": "Admin: admin@birfilipino.app / Admin@2026 (auto-seeded). Phase 3 tests register fresh TEST_billing_*@example.com / TEST_cpa_* / TEST_legacy_* sessions per scenario; webhook mapping tests insert ephemeral u_test_* + sub_TEST_* docs and clean up at the end of each parametrized run.",
+  "seed_data_creation": "Each webhook mapping test seeds one users + one subscriptions doc with a unique paymongo_subscription_id, fires the webhook event, asserts the persisted status, and then deletes both docs. paymongo_events rows produced during the run are left in place (audit log; harmless). paymongo_payments docs from the invoice.paid test are also cleaned up.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend at https://bir-filer.preview.emergentagent.com is fully working. 66/66 pytest cases green (test_bir_backend.py + test_bir_phase2.py + test_bir_phase3.py). PAYMONGO_SECRET_KEY/PUBLIC_KEY/WEBHOOK_SECRET remain empty by design — system runs the mock fallback path (provider='mock', subscription auto-activates locally). When keys are populated post-session, /billing/config will auto-flip to provider='paymongo' and /checkout will create real PayMongo customers/plans/subscriptions; /attach-payment will accept (currently 400). Webhook signature verification is fully unit-tested via verify_webhook_signature() — once PAYMONGO_WEBHOOK_SECRET lands, the route's 403-on-bad-sig path becomes live (currently bypassed because secret is empty). User.managed_by_cpa_id is plumbed through the model, defaults to None, and is forward-compatible with both new registrations and legacy docs missing the field.",
+  "rca of the issue": "No bugs. All 14 review-request bullets verified end-to-end. Test fixture KeyError on first run was a test-side mistake (assumed /auth/register returns {user:{...}} envelope; it actually returns the User dict directly) — fixed in the test file before the final run. No backend code changes were needed."
+}

@@ -87,6 +87,9 @@ async def on_startup():
     await db.reminders_sent.create_index("dedup_key", unique=True)
     await db.reminders_sent.create_index("sent_at")
     await db.reminder_attempts.create_index([("user_id", 1), ("attempted_at", -1)])
+    await db.paymongo_plans.create_index("tier", unique=True)
+    await db.paymongo_events.create_index("received_at")
+    await db.paymongo_payments.create_index("paymongo_subscription_id")
 
     # Seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@birfilipino.app")

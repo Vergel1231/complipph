@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from datetime import datetime, timezone, timedelta
 
 from auth import require_admin
-from models import BirRule, BirRuleUpdate
+from models import BirRuleUpdate
 from bir_engine import DEFAULT_RULES
 
 router = APIRouter(prefix="/admin", tags=["admin"])

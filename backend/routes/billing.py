@@ -5,8 +5,6 @@ PayMongo swap notes:
 - Add webhook handler at /api/billing/webhook/paymongo to update subscription status
 - Stripe path can mirror this with /api/billing/checkout?provider=stripe
 """
-import os
-import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request, Depends, HTTPException
 

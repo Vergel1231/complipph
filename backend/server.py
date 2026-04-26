@@ -84,6 +84,9 @@ async def on_startup():
     await db.bir_rules.create_index("rule_key", unique=True)
     await db.subscriptions.create_index([("user_id", 1), ("status", 1)])
     await db.ai_messages.create_index([("user_id", 1), ("session_id", 1)])
+    await db.reminders_sent.create_index("dedup_key", unique=True)
+    await db.reminders_sent.create_index("sent_at")
+    await db.reminder_attempts.create_index([("user_id", 1), ("attempted_at", -1)])
 
     # Seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@birfilipino.app")

@@ -84,22 +84,38 @@ async def run_daily_reminders(db) -> dict:
                 subject=f"BIR {d['form_type']} due in {d['days_until']} day(s) — {d['period']}",
                 html=html,
             )
-            if result.get("status") == "sent":
-                sent += 1
-            elif result.get("status") == "disabled":
-                skipped_disabled += 1
-            else:
-                errors += 1
-            await db.reminders_sent.insert_one({
+            status = result.get("status")
+            # Always log the attempt for diagnostics
+            await db.reminder_attempts.insert_one({
                 "dedup_key": dedup_key,
                 "user_id": user["user_id"],
                 "email": user["email"],
                 "form_type": d["form_type"],
                 "period": d["period"],
                 "days_until": d["days_until"],
-                "result_status": result.get("status"),
-                "sent_at": datetime.now(timezone.utc).isoformat(),
+                "result_status": status,
+                "attempted_at": datetime.now(timezone.utc).isoformat(),
             })
+            if status == "sent":
+                sent += 1
+                # Only mark as "sent" (and dedup future runs) when the email
+                # actually went out. This makes the job self-healing once
+                # RESEND_API_KEY is populated — pending reminders will fire
+                # on the next run rather than being silently skipped.
+                await db.reminders_sent.insert_one({
+                    "dedup_key": dedup_key,
+                    "user_id": user["user_id"],
+                    "email": user["email"],
+                    "form_type": d["form_type"],
+                    "period": d["period"],
+                    "days_until": d["days_until"],
+                    "result_status": status,
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                })
+            elif status == "disabled":
+                skipped_disabled += 1
+            else:
+                errors += 1
 
     report = {
         "ran_at": datetime.now(timezone.utc).isoformat(),

@@ -38,7 +38,7 @@ Tagline: _"The solo professional's tool that generates your BIR form in 60 secon
 - Frontend: React + React Router + Tailwind + shadcn/ui + Phosphor Icons
 - Design: Cabinet Grotesk + Manrope, warm sand / deep olive / terracotta palette
 
-## Implemented (Feb 26, 2026 — MVP)
+## Implemented (Feb 26, 2026 — MVP + Phase 2)
 ### Backend
 - ✅ JWT email/password auth (register, login, logout, refresh, /me, forgot/reset)
 - ✅ Emergent Google SSO (POST /api/auth/google/session) with httpOnly session cookie
@@ -51,6 +51,10 @@ Tagline: _"The solo professional's tool that generates your BIR form in 60 secon
 - ✅ AI Tax Assistant (Claude Sonnet 4.5)
 - ✅ Admin: MRR, churn, user count, BIR rules editor, user list
 - ✅ Mock billing (Solo / Pro / Reseller plans, PayMongo-ready structure)
+- ✅ **APScheduler daily 09:00 Asia/Manila** reminder cron — sends 30/7/1-day BIR deadline emails via Resend (no-op until `RESEND_API_KEY` is set; self-healing dedup logic)
+- ✅ **POST /api/admin/run-reminders** manual trigger endpoint (admin-only)
+- ✅ **GET /api/forms/{id}/export.pdf** — reportlab BIR worksheet PDF
+- ✅ **GET /api/forms/{id}/export.xml** — eBIRForms-style XML envelope
 
 ### Frontend
 - ✅ Landing page (hero with Tetris grid, 3-stat band, how-it-works, audience showcase, retention lock-in band, CPA reseller, footer CTA)
@@ -67,13 +71,13 @@ Tagline: _"The solo professional's tool that generates your BIR form in 60 secon
 - ✅ Admin (metrics, users table, BIR rules editor)
 
 ### Testing
-- ✅ Backend: 30/30 tests passed (auth, BIR math, gating, deadlines, AI, admin RBAC, billing)
+- ✅ Backend Phase 1: 30/30 tests passed
+- ✅ Backend Phase 2: 13 new tests passed (43/43 total — zero regressions)
 
 ## Backlog
 ### P0 (next)
-- [ ] Resend email integration (deadline reminders 30/7/1d cron) — needs `RESEND_API_KEY`
+- [ ] **Add `RESEND_API_KEY` to env** — email sending is fully wired; reminders flip from `disabled` → `sent` automatically (dedup is self-healing)
 - [ ] PayMongo live swap (replace mock checkout, add webhook handler)
-- [ ] PDF/eBIRForms `.xml` export for filings (currently JSON only)
 
 ### P1
 - [ ] Payroll module (compute net pay, 1604C summary)

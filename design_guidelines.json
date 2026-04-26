@@ -1,0 +1,123 @@
+{
+  "theme": "light",
+  "archetype": "1 - Organic & Earthy",
+  "design_philosophy": "E1 Protocol: Emotional trust first. Tax compliance for Filipino freelancers is an anxious, high-friction process. We use an 'Organic & Earthy' palette (warm sand, deep olive, soft sage) to evoke calm, stability, and professional control. No 'fintech bro' dark mode. No boring enterprise gray. The design must feel like stepping into a well-lit, premium accounting consultant's office.",
+  "typography": {
+    "anti_default_rule": true,
+    "primary_heading_font": "Cabinet Grotesk",
+    "secondary_body_font": "Manrope",
+    "font_import_url": "https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700;800;900&family=Manrope:wght@400;500;600;700&display=swap",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-none font-bold text-olive-900",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-tight font-bold text-olive-900",
+      "h3": "text-xl sm:text-2xl tracking-tight leading-snug font-semibold text-olive-800",
+      "h4": "text-lg sm:text-xl font-medium text-olive-800",
+      "body": "text-base leading-relaxed text-sand-800 font-manrope",
+      "body_sm": "text-sm leading-relaxed text-sand-600 font-manrope",
+      "overline": "text-xs tracking-[0.2em] uppercase font-bold text-terracotta-600"
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#F9F8F6",
+      "paper": "#FFFFFF",
+      "muted": "#F0EFEA"
+    },
+    "brand": {
+      "primary": "#2C4C3B",
+      "primary_hover": "#1E3629",
+      "secondary": "#8FA998",
+      "accent_terracotta": "#E06D53",
+      "accent_terracotta_hover": "#C95B42"
+    },
+    "text": {
+      "primary": "#1A2E24",
+      "secondary": "#516359",
+      "muted": "#8A9A91"
+    },
+    "border": {
+      "default": "#E2E0D8",
+      "focus": "#2C4C3B"
+    },
+    "status": {
+      "success": "#3A6B53",
+      "warning": "#D48B3E",
+      "error": "#E06D53",
+      "info": "#4A788C"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing. Use 2-3x more spacing than standard designs. Containers with borders MUST have heavy internal padding (p-6, p-8) to prevent text collision.",
+    "marketing_page": {
+      "grid": "The Tetris Grid (Asymmetrical)",
+      "structure": "grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-8 md:gap-12",
+      "hero_overlay": "bg-white/20 to bg-white/40 (gradient overlay for contrast, never flat black blanket)"
+    },
+    "dashboard_page": {
+      "grid": "The Control Room Grid",
+      "structure": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6",
+      "density": "Tight but highly readable. Utilize h-full on children for strict optical alignment."
+    }
+  },
+  "surface_strategies": {
+    "cards_and_widgets": "Neumorphism (Tactile Variant) - Clay & Crisp. Flat background matching parent exactly or slightly elevated paper (#FFFFFF). Soft ambient shadow + 1px sharp inner border (border-sand-200) to ground it.",
+    "headers_and_nav": "If content scrolls under, use Crystal Glass: bg-white/80 backdrop-blur-xl border-b border-sand-200. If solid, use bg-sand-50 border-b border-sand-200.",
+    "footers": "Massive Space: py-24 bg-olive-900 text-sand-50. Contrast shift from light body to dark footer."
+  },
+  "motion_and_interactions": {
+    "philosophy": "Calm and responsive. Micro-interactions for feedback, avoiding excessive bounce.",
+    "hover_states": "ALWAYS explicitly set text color on hover. e.g., hover:bg-olive-900 hover:text-white",
+    "focus_states": "High contrast ring: focus:ring-2 focus:ring-terracotta-500 focus:outline-none",
+    "transitions": "transition-all duration-300 ease-in-out (specific properties: transform, opacity, background-color, border-color)"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-olive-900 text-white hover:bg-olive-800 rounded-md px-6 py-3 font-medium transition-colors shadow-sm",
+      "secondary": "bg-sand-100 text-olive-900 border border-sand-300 hover:bg-sand-200 rounded-md px-6 py-3 font-medium transition-colors",
+      "accent": "bg-terracotta-600 text-white hover:bg-terracotta-700 rounded-md px-6 py-3 font-medium transition-colors shadow-sm"
+    },
+    "forms": "Shadcn Form primitives deeply customized. Input fields must have solid light backgrounds (bg-white), 1px border-sand-300, rounded-md, p-3. Labels must be text-sm font-semibold text-olive-900.",
+    "badges": "rounded-full px-3 py-1 text-xs font-bold tracking-wide. For tax status: bg-sage-100 text-olive-900.",
+    "charts": "Shadcn charts using recharts. Colors must map to Olive, Terracotta, and Sage to avoid default blue/teal palettes."
+  },
+  "accessibility": {
+    "testing_attributes": "All interactive and key informational elements MUST include a data-testid attribute using kebab-case role-based naming (e.g., data-testid='generate-bir-form-button').",
+    "contrast": "Text must meet minimum 4.5:1 ratio against backgrounds. Use text-olive-900 on sand backgrounds. Do not use generic #808080 gray."
+  },
+  "media": {
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/4939660/pexels-photo-4939660.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Solo professional working on a laptop in a bright, minimalist home office. Use for Hero Section to build immediate empathy and aspiration.",
+        "category": "hero"
+      },
+      {
+        "url": "https://images.pexels.com/photos/34973548/pexels-photo-34973548.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Freelancer working outside/at a cafe. Use for Testimonial or 'Work from anywhere' feature block.",
+        "category": "lifestyle_feature"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1601662528567-526cd06f6582?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NjZ8MHwxfHNlYXJjaHwxfHxwYXBlciUyMHRleHR1cmUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3NzE3Nzg0OHww&ixlib=rb-4.1.0&q=85",
+        "description": "Subtle paper texture. Use as a blended background layer (opacity 5-10%) on the landing page to give a high-end editorial feel.",
+        "category": "background_texture"
+      },
+      {
+        "url": "https://images.pexels.com/photos/32254665/pexels-photo-32254665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Female doctor/professional. Use in the audience-targeting section ('Built for Doctors, Lawyers, Consultants').",
+        "category": "audience_showcase"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install and setup the required fonts (Cabinet Grotesk and Manrope) in the global CSS.",
+    "Apply the Warm Sand (#F9F8F6) background globally to the body.",
+    "Implement the landing page using the Tetris Grid logic. Avoid standard boring columns. Overlap images with content boxes slightly.",
+    "For the BIR form generator, use a multi-step wizard (Shadcn Tabs/Forms) with clear, large typography. Make the inputs feel physical and premium.",
+    "Dashboard should utilize the 'Control Room' grid: dense, gap-6, 1px borders, avoiding heavy shadows or generic card looks. Use pure white for data containers on top of the sand background.",
+    "Ensure the hero image has a gentle gradient overlay (bg-white/30) to ensure text legibility.",
+    "Never use generic teal or purple.",
+    "Add 'data-testid' to EVERY button, input, and interactive link.",
+    "Use Phosphor Icons (@phosphor-icons/react) for a premium, consistent iconography style across the app.",
+    "Build the dashboard routing: Dashboard (Deadlines), Filing History, Form Generator, AI Tax Assistant, and Admin."
+  ]
+}

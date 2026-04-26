@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 from auth import require_admin
 from models import BirRuleUpdate
 from bir_engine import DEFAULT_RULES
+from scheduler import run_daily_reminders
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -68,6 +69,14 @@ async def list_rules(request: Request, _admin=Depends(require_admin)):
                 "updated_at": None,
             })
     return out
+
+
+@router.post("/run-reminders")
+async def run_reminders_now(request: Request, _admin=Depends(require_admin)):
+    """Manually trigger the daily BIR deadline reminder job."""
+    db = request.app.state.db
+    return await run_daily_reminders(db)
+
 
 
 @router.put("/bir-rules/{rule_key}")

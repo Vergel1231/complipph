@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
-import api, { formatPHP } from "@/lib/api";
+import api, { formatPHP, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { FileTextIcon, EyeIcon } from "@phosphor-icons/react";
+import { FileTextIcon, EyeIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,6 +20,20 @@ export default function FilingHistory() {
       setLoading(false);
     })();
   }, []);
+
+  const downloadFile = async (f, format) => {
+    try {
+      const res = await api.get(`/forms/${f.filing_id}/export.${format}`, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BIR_${f.form_type}_${f.period}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    }
+  };
 
   return (
     <AppLayout>
@@ -64,9 +79,17 @@ export default function FilingHistory() {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <Button size="sm" variant="ghost" onClick={() => setOpen(f)} data-testid={`view-filing-${f.filing_id}`} className="text-olive-700 hover:bg-sand-100">
-                    <EyeIcon size={16} /> View
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setOpen(f)} data-testid={`view-filing-${f.filing_id}`} className="text-olive-700 hover:bg-sand-100">
+                      <EyeIcon size={16} /> View
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => downloadFile(f, "pdf")} data-testid={`download-pdf-${f.filing_id}`} className="text-olive-700 hover:bg-sand-100">
+                      <DownloadSimpleIcon size={16} /> PDF
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => downloadFile(f, "xml")} data-testid={`download-xml-${f.filing_id}`} className="text-olive-700 hover:bg-sand-100">
+                      <FileTextIcon size={16} /> XML
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

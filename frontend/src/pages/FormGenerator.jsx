@@ -74,14 +74,18 @@ export default function FormGenerator() {
     }
   };
 
-  const downloadJSON = () => {
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${result.form_type}_${result.period}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadFile = async (format) => {
+    try {
+      const res = await api.get(`/forms/${result.filing_id}/export.${format}`, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BIR_${result.form_type}_${result.period}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    }
   };
 
   return (
@@ -203,8 +207,11 @@ export default function FormGenerator() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button onClick={downloadJSON} data-testid="download-form-button" className="bg-terracotta-500 hover:bg-terracotta-600 text-white px-6 py-5">
-              <DownloadSimpleIcon size={18} /> Download JSON
+            <Button onClick={() => downloadFile("pdf")} data-testid="download-pdf-button" className="bg-terracotta-500 hover:bg-terracotta-600 text-white px-6 py-5">
+              <DownloadSimpleIcon size={18} /> Download PDF
+            </Button>
+            <Button onClick={() => downloadFile("xml")} variant="outline" data-testid="download-xml-button" className="border-olive-600 text-olive-900 hover:bg-olive-50 px-6 py-5">
+              <FileTextIcon size={18} /> eBIRForms XML
             </Button>
             <Button
               onClick={async () => {

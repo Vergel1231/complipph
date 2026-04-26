@@ -19,6 +19,8 @@ from routes.deadlines_route import router as deadlines_router
 from routes.ai_assistant import router as ai_router
 from routes.admin import router as admin_router
 from routes.billing import router as billing_router
+from routes.exports import router as exports_router
+from scheduler import start_scheduler, stop_scheduler
 
 # ─── App + DB ───────────────────────────────────────────────────
 app = FastAPI(title="BIR Filipino — Filing SaaS")
@@ -49,6 +51,7 @@ async def health():
 api_router.include_router(auth_router)
 api_router.include_router(business_router)
 api_router.include_router(forms_router)
+api_router.include_router(exports_router)
 api_router.include_router(deadlines_router)
 api_router.include_router(ai_router)
 api_router.include_router(admin_router)
@@ -114,7 +117,11 @@ async def on_startup():
 
     logger.info("BIR Filipino API ready.")
 
+    # Start in-process daily reminder cron (09:00 Asia/Manila)
+    start_scheduler(db)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    stop_scheduler()
     mongo_client.close()

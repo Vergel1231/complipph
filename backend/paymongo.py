@@ -59,7 +59,45 @@ class PayMongoError(Exception):
         super().__init__(f"PayMongo error {status}: {body[:200]}")
 
 
-# ─── Plans ──────────────────────────────────────────────────────
+# ─── Checkout Sessions (hosted checkout — works on all PayMongo accounts) ──
+async def create_checkout_session(*, amount_php: float, description: str, name: str,
+                                  success_url: str, cancel_url: str,
+                                  reference_number: str,
+                                  customer_email: Optional[str] = None,
+                                  payment_method_types: Optional[list] = None,
+                                  metadata: Optional[dict] = None) -> dict:
+    """Create a PayMongo hosted Checkout Session.
+
+    Returns a dict with `data.attributes.checkout_url` the user should visit.
+    After payment the user is redirected to success_url/cancel_url and
+    PayMongo fires `checkout_session.payment.paid` webhook to confirm.
+    """
+    attrs = {
+        "line_items": [{
+            "amount": int(round(amount_php * 100)),
+            "currency": "PHP",
+            "name": name,
+            "quantity": 1,
+        }],
+        "payment_method_types": payment_method_types or ["card", "gcash", "grab_pay", "paymaya"],
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "description": description,
+        "reference_number": reference_number,
+        "send_email_receipt": False,
+    }
+    if customer_email:
+        attrs["customer_email"] = customer_email
+    if metadata:
+        attrs["metadata"] = metadata
+    return await _post("/checkout_sessions", {"data": {"attributes": attrs}})
+
+
+async def retrieve_checkout_session(session_id: str) -> dict:
+    return await _get(f"/checkout_sessions/{session_id}")
+
+
+# ─── Plans / Subscriptions (require special activation — kept for future) ──
 async def create_plan(*, name: str, description: str, amount_php: float,
                       interval: str = "month", interval_count: int = 1) -> dict:
     """Create a recurring billing plan. Amount is converted to centavos."""

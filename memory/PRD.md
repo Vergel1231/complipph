@@ -52,16 +52,16 @@ Tagline: _"The solo professional's tool that generates your BIR form in 60 secon
 - ✅ Admin: MRR, churn, user count, BIR rules editor, user list
 - ✅ APScheduler daily 09:00 Asia/Manila reminder cron + `/api/admin/run-reminders`
 - ✅ GET /api/forms/{id}/export.pdf (reportlab) + export.xml (eBIRForms-style)
-- ✅ **PayMongo native recurring subscriptions** with mock fallback when keys empty:
-  - GET /api/billing/config (provider + public key)
-  - POST /api/billing/checkout (creates PayMongo customer + subscription + payment_intent OR mock)
-  - POST /api/billing/attach-payment (attaches frontend-tokenized card to payment intent, returns 3DS URL)
-  - POST /api/billing/cancel (cancels upstream + locally)
-  - POST /api/billing/webhook/paymongo (HMAC-SHA256 signature verification, audit log, status mapping)
+- ✅ **PayMongo Checkout Sessions** (hosted checkout — card + GCash + GrabPay + Maya) with mock fallback when keys empty:
+  - GET /api/billing/config (provider + flow)
+  - POST /api/billing/checkout (creates PayMongo Checkout Session → returns `redirect_url`)
+  - POST /api/billing/cancel (flips status, no upstream cancel needed — session is one-time)
+  - POST /api/billing/webhook/paymongo (HMAC-SHA256 verified; handles `checkout_session.payment.paid` → flips sub to `active`, logs payment)
+  - Note: The Subscriptions API (`/plans`, `/subscriptions`) is an activation-restricted PayMongo product not available on most sandbox accounts; Checkout Sessions is the universal path and also unlocks GCash/GrabPay/Maya for Filipino users. Recurring monthly charges will be handled in Phase 4 by the APScheduler cron re-issuing a session URL 3 days before `next_billing_at`.
 - ✅ **User.managed_by_cpa_id** optional/nullable field — non-breaking foundation for Phase 4 reseller dashboard
 
 ### Frontend
-- ✅ Pricing page now opens **PayMongoCheckout modal** with PCI-safe card tokenization (public-key only, card data never touches our backend)
+- ✅ Pricing page → `window.location = redirect_url` to PayMongo-hosted checkout (no card data touches our app)
 - ✅ Falls back to instant mock activation when keys empty
 
 ### Frontend

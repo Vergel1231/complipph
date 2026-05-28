@@ -192,7 +192,10 @@ class TestBusinessProfile:
 # ─── BIR Engine — 1701Q 8% Flat ────────────────────────────────
 class TestForm1701QFlat:
     def test_8pct_flat_correct_math(self, flat_user_session):
-        # gross 500k + other 100k → (600k - 250k) * 0.08 = 28000
+        # NEW SPEC: Line 41 (Net Taxable Income) = Gross Sales directly,
+        # Line 42 (Income Tax Due) = 8% × Gross Sales. No deductions apply
+        # at quarterly 1701Q; the ₱250k exemption is applied at the annual 1701.
+        # gross 500k → Line 41 = 500000, Line 42 = 500000 × 0.08 = 40000
         payload = {
             "form_type": "1701Q", "period": "2026-Q1",
             "gross_sales": 500000, "other_income": 100000,
@@ -204,21 +207,49 @@ class TestForm1701QFlat:
         c = r.json()["computed"]
         assert c["form_type"] == "1701Q"
         assert c["method"] == "8% flat tax"
-        assert c["net_taxable_income"] == 350000.0
-        assert c["income_tax_due"] == 28000.0
-        assert c["tax_payable"] == 28000.0
+        assert c["net_taxable_income"] == 500000.0
+        assert c["income_tax_due"] == 40000.0
+        assert c["tax_payable"] == 40000.0
+        # Verify field_map matches
+        fm = c["field_map"]
+        assert fm["Line 36 — Gross Sales/Receipts"] == 500000.0
+        assert fm["Line 41 — Net Taxable Income"] == 500000.0
+        assert fm["Line 42 — Income Tax Due"] == 40000.0
+        assert fm["Line 45 — Tax Payable"] == 40000.0
 
-    def test_8pct_flat_below_exemption(self, flat_user_session):
-        # gross 100k → 0 tax (below 250k exemption)
+    def test_8pct_flat_user_fixture(self, flat_user_session):
+        # User-provided spec fixture: gross 150k, withheld 7500
+        # → Line 42 = 12000, Line 45 = 4500
         payload = {
             "form_type": "1701Q", "period": "2026-Q1",
-            "gross_sales": 100000, "other_income": 0,
+            "gross_sales": 150000, "other_income": 0,
+            "cost_of_sales": 0, "operating_expenses": 0,
+            "creditable_tax_withheld": 7500, "tax_paid_previous_quarters": 0,
+        }
+        r = flat_user_session.post(f"{API}/forms/generate", json=payload)
+        assert r.status_code == 200, r.text
+        c = r.json()["computed"]
+        assert c["net_taxable_income"] == 150000.0
+        assert c["income_tax_due"] == 12000.0
+        assert c["tax_payable"] == 4500.0
+        fm = c["field_map"]
+        assert fm["Line 41 — Net Taxable Income"] == 150000.0
+        assert fm["Line 42 — Income Tax Due"] == 12000.0
+        assert fm["Line 43 — Less Creditable Tax Withheld"] == 7500.0
+        assert fm["Line 45 — Tax Payable"] == 4500.0
+
+    def test_8pct_flat_zero_gross(self, flat_user_session):
+        # gross 0 → 0 tax (no income, no liability)
+        payload = {
+            "form_type": "1701Q", "period": "2026-Q1",
+            "gross_sales": 0, "other_income": 0,
         }
         r = flat_user_session.post(f"{API}/forms/generate", json=payload)
         assert r.status_code == 200
         c = r.json()["computed"]
         assert c["net_taxable_income"] == 0.0
         assert c["income_tax_due"] == 0.0
+        assert c["tax_payable"] == 0.0
 
 
 # ─── BIR Engine — 1701Q Graduated ──────────────────────────────

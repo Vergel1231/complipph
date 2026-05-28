@@ -75,10 +75,12 @@ def compute_1701q(
 ) -> dict:
     gross_total = gross_sales + other_income
     if classification == "8_percent_flat":
-        # 8% on gross sales/receipts net of 250k exemption
-        taxable_base = max(0.0, gross_sales + other_income - rules["personal_exemption"])
-        income_tax_due = taxable_base * rules["flat_tax_rate"]
-        net_taxable_income = taxable_base
+        # 8% flat: tax is 8% of Gross Sales/Receipts (Line 36) directly.
+        # No deductions apply — Net Taxable Income equals Gross Sales.
+        # The ₱250k exemption is applied at the annual 1701 return, not at
+        # quarterly 1701Q.
+        net_taxable_income = gross_sales
+        income_tax_due = gross_sales * rules["flat_tax_rate"]
         method = "8% flat tax"
     else:
         # Graduated: gross less cost of sales less operating expenses
@@ -95,7 +97,7 @@ def compute_1701q(
         "gross_total": _round2(gross_total),
         "cost_of_sales": _round2(cost_of_sales) if classification == "graduated" else 0.0,
         "operating_expenses": _round2(operating_expenses) if classification == "graduated" else 0.0,
-        "personal_exemption": _round2(rules["personal_exemption"]) if classification == "8_percent_flat" else 0.0,
+        "personal_exemption": 0.0,  # ₱250k exemption is applied at annual 1701, not quarterly 1701Q
         "net_taxable_income": _round2(net_taxable_income),
         "income_tax_due": _round2(income_tax_due),
         "creditable_tax_withheld": _round2(creditable_tax_withheld),

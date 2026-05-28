@@ -6,7 +6,7 @@ import {
   SparkleIcon, UsersThreeIcon, ArrowRightIcon, CheckCircleIcon, ClockCountdownIcon,
 } from "@phosphor-icons/react";
 
-const HERO_IMG = "https://images.pexels.com/photos/4939660/pexels-photo-4939660.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
+const HERO_IMG = "https://images.pexels.com/photos/4683642/pexels-photo-4683642.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 const AUDIENCE_IMG = "https://images.pexels.com/photos/32254665/pexels-photo-32254665.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
 export default function Landing() {

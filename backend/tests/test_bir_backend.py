@@ -8,12 +8,26 @@ import time
 import uuid
 import pytest
 import requests
+from pathlib import Path
+from dotenv import load_dotenv
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://bir-filer.preview.emergentagent.com").rstrip("/")
+# Load /app/backend/.env so ADMIN_PASSWORD reflects live value
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+
+def _read_frontend_backend_url() -> str:
+    text = Path("/app/frontend/.env").read_text()
+    for line in text.splitlines():
+        if line.startswith("REACT_APP_BACKEND_URL="):
+            return line.split("=", 1)[1].strip().strip('"').rstrip("/")
+    raise RuntimeError("REACT_APP_BACKEND_URL missing")
+
+
+BASE_URL = _read_frontend_backend_url()
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = "admin@birfilipino.app"
-ADMIN_PASSWORD = "Admin@2026"
+ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 
 def _new_email(prefix="testuser"):
@@ -411,24 +425,34 @@ class TestBilling:
             assert "amount_php" in plans[p]
 
     def test_checkout_activates_subscription(self, flat_user_session):
+        """In MOCK mode (PayMongo keys empty), checkout activates immediately.
+        In LIVE mode (keys configured), checkout returns a hosted redirect_url
+        and the subscription stays 'incomplete' until the webhook confirms."""
         r = flat_user_session.post(f"{API}/billing/checkout", json={"plan": "solo"})
         assert r.status_code == 200
         body = r.json()
         assert body["ok"] is True
-        assert body["provider"] == "mock"
         assert "subscription_id" in body
 
-        # Subscription endpoint should return active sub
-        r2 = flat_user_session.get(f"{API}/billing/subscription")
-        assert r2.status_code == 200
-        sub = r2.json()
-        assert sub is not None
-        assert sub["status"] == "active"
-        assert sub["plan"] == "solo"
-
-        # User profile should reflect subscription
-        me = flat_user_session.get(f"{API}/auth/me").json()
-        assert me["subscription_status"] == "active"
+        live = bool(os.environ.get("PAYMONGO_SECRET_KEY"))
+        if live:
+            assert body["provider"] == "paymongo"
+            assert body.get("flow") == "checkout_session"
+            assert body.get("redirect_url", "").startswith("https://checkout.paymongo.com/")
+            r2 = flat_user_session.get(f"{API}/billing/subscription")
+            sub = r2.json()
+            assert sub is not None
+            assert sub["status"] == "incomplete"  # webhook will flip to active
+            assert sub["provider"] == "paymongo"
+        else:
+            assert body["provider"] == "mock"
+            r2 = flat_user_session.get(f"{API}/billing/subscription")
+            sub = r2.json()
+            assert sub is not None
+            assert sub["status"] == "active"
+            assert sub["plan"] == "solo"
+            me = flat_user_session.get(f"{API}/auth/me").json()
+            assert me["subscription_status"] == "active"
 
     def test_checkout_invalid_plan(self, flat_user_session):
         r = flat_user_session.post(f"{API}/billing/checkout", json={"plan": "enterprise"})

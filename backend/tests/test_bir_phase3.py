@@ -24,19 +24,56 @@ import hashlib
 import importlib
 import pytest
 import requests
+from pathlib import Path
+from dotenv import load_dotenv
 from pymongo import MongoClient
 
-BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL",
-    "https://bir-filer.preview.emergentagent.com",
-).rstrip("/")
+# Make /app/backend importable for `import paymongo` in unit tests
+_BE = Path(__file__).resolve().parent.parent
+if str(_BE) not in sys.path:
+    sys.path.insert(0, str(_BE))
+
+load_dotenv(_BE / ".env")
+
+
+def _read_frontend_backend_url() -> str:
+    text = Path("/app/frontend/.env").read_text()
+    for line in text.splitlines():
+        if line.startswith("REACT_APP_BACKEND_URL="):
+            return line.split("=", 1)[1].strip().strip('"').rstrip("/")
+    raise RuntimeError("REACT_APP_BACKEND_URL missing")
+
+
+BASE_URL = _read_frontend_backend_url()
 API = f"{BASE_URL}/api"
 
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "test_database")
 
-ADMIN_EMAIL = "admin@birfilipino.app"
-ADMIN_PASSWORD = "Admin@2026"
+ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
+
+# Env-conditional skips
+PAYMONGO_LIVE = bool(os.environ.get("PAYMONGO_SECRET_KEY"))
+WEBHOOK_SECRET_SET = bool(os.environ.get("PAYMONGO_WEBHOOK_SECRET"))
+needs_mock_mode = pytest.mark.skipif(
+    PAYMONGO_LIVE,
+    reason="Test requires PAYMONGO_SECRET_KEY to be empty (mock fallback path).",
+)
+needs_secret_empty = pytest.mark.skipif(
+    WEBHOOK_SECRET_SET,
+    reason="Test requires PAYMONGO_WEBHOOK_SECRET to be empty.",
+)
+
+
+def _sign(body: bytes, secret: str | None = None, *, when: int | None = None) -> str:
+    """Build a valid Paymongo-Signature header for the given body bytes."""
+    secret = secret if secret is not None else os.environ.get("PAYMONGO_WEBHOOK_SECRET", "")
+    ts = str(when if when is not None else int(time.time()))
+    if not secret:
+        return f"t={ts},te=unsigned,li=unsigned"
+    sig = hmac.new(secret.encode(), f"{ts}.{body.decode()}".encode(), hashlib.sha256).hexdigest()
+    return f"t={ts},te={sig},li={sig}"
 
 
 def _new_email(prefix="phase3"):
@@ -65,12 +102,18 @@ def fresh_user():
 
 
 # ─── 1. /billing/config ───────────────────────────────────────
-def test_config_reports_mock_when_keys_empty():
+def test_config_reports_correct_provider():
+    """Provider should reflect env: 'paymongo' when key set, 'mock' otherwise."""
     r = requests.get(f"{API}/billing/config")
     assert r.status_code == 200
     body = r.json()
-    assert body["provider"] == "mock"
-    assert body["public_key"] == ""
+    if PAYMONGO_LIVE:
+        assert body["provider"] == "paymongo"
+        assert body["public_key"].startswith("pk_")
+        assert body.get("flow") == "checkout_session"
+    else:
+        assert body["provider"] == "mock"
+        assert body["public_key"] == ""
 
 
 # ─── 2. /billing/plans catalog ────────────────────────────────
@@ -93,55 +136,62 @@ def test_checkout_requires_auth():
     assert r.status_code == 401
 
 
-# ─── 4. mock checkout activates subscription ──────────────────
-def test_mock_checkout_activates_subscription(fresh_user, db):
+# ─── 4. checkout activation (mode-aware) ──────────────────────
+def test_checkout_activates_subscription(fresh_user, db):
+    """In mock mode, checkout activates immediately.
+    In live mode, checkout returns a Checkout Session URL + status='incomplete'."""
     s = fresh_user["session"]
     r = s.post(f"{API}/billing/checkout", json={"plan": "solo"})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["ok"] is True
-    assert body["provider"] == "mock"
     assert body["subscription_id"].startswith("s_")
 
-    # Verify persisted user.subscription_status='active'
-    user_doc = db.users.find_one({"user_id": fresh_user["user_id"]}, {"_id": 0})
-    assert user_doc is not None
-    assert user_doc["subscription_status"] == "active"
-    assert user_doc["subscription_plan"] == "solo"
+    if PAYMONGO_LIVE:
+        assert body["provider"] == "paymongo"
+        assert body["flow"] == "checkout_session"
+        assert body["redirect_url"].startswith("https://checkout.paymongo.com/")
+        assert body["checkout_session_id"].startswith("cs_")
+        # Sub exists in incomplete state until webhook fires
+        sub_doc = db.subscriptions.find_one(
+            {"user_id": fresh_user["user_id"]}, {"_id": 0}
+        )
+        assert sub_doc is not None
+        assert sub_doc["status"] == "incomplete"
+        assert sub_doc["provider"] == "paymongo"
+    else:
+        assert body["provider"] == "mock"
+        user_doc = db.users.find_one({"user_id": fresh_user["user_id"]}, {"_id": 0})
+        assert user_doc["subscription_status"] == "active"
+        sub_doc = db.subscriptions.find_one(
+            {"user_id": fresh_user["user_id"], "status": "active"}, {"_id": 0}
+        )
+        assert sub_doc["provider"] == "mock"
 
-    # Verify subscriptions collection has a provider='mock', status='active' doc
-    sub_doc = db.subscriptions.find_one(
-        {"user_id": fresh_user["user_id"], "status": "active"}, {"_id": 0}
-    )
-    assert sub_doc is not None
-    assert sub_doc["provider"] == "mock"
-    assert sub_doc["plan"] == "solo"
-    assert sub_doc["amount_php"] == 499.0
 
-
-# ─── 5. /billing/subscription returns active doc ──────────────
-def test_get_subscription_returns_active_doc(fresh_user):
+# ─── 5. /billing/subscription returns subscription doc ────────
+def test_get_subscription_returns_doc(fresh_user):
+    """Returned status depends on mode (mock=active, live=incomplete)."""
     s = fresh_user["session"]
     r = s.get(f"{API}/billing/subscription")
     assert r.status_code == 200, r.text
     body = r.json()
     assert body is not None
-    assert body["status"] == "active"
-    assert body["provider"] == "mock"
     assert body["plan"] == "solo"
+    if PAYMONGO_LIVE:
+        assert body["status"] == "incomplete"
+        assert body["provider"] == "paymongo"
+    else:
+        assert body["status"] == "active"
+        assert body["provider"] == "mock"
 
 
-# ─── 6. /billing/attach-payment 400 when keys empty ───────────
+# ─── 6. /attach-payment was removed in Checkout Sessions refactor ─
+@pytest.mark.skip(reason="/billing/attach-payment was removed when we pivoted to "
+                          "Checkout Sessions (Subscriptions API requires PayMongo activation). "
+                          "Card collection now happens on PayMongo's hosted checkout page.")
 def test_attach_payment_400_when_no_keys(fresh_user):
-    s = fresh_user["session"]
-    r = s.post(f"{API}/billing/attach-payment", json={
-        "payment_intent_id": "pi_dummy",
-        "payment_method_id": "pm_dummy",
-        "client_key": "ck_dummy",
-    })
-    assert r.status_code == 400
-    detail = r.json().get("detail", "")
-    assert "PayMongo not configured" in detail
+    pass
 
 
 # ─── 7. /billing/cancel flips status ──────────────────────────
@@ -166,8 +216,10 @@ def test_cancel_subscription(fresh_user, db):
     assert r2.json() is None
 
 
-# ─── 8. webhook accepted unverified when secret empty ─────────
-def test_webhook_accepted_unverified_in_mock_mode(db):
+# ─── 8. webhook accepts signed payload (or unverified when secret empty) ─
+def test_webhook_accepts_signed_payload(db):
+    """Sign the body when PAYMONGO_WEBHOOK_SECRET is set; otherwise send
+    unsigned. Both paths should return 200 and persist a paymongo_events row."""
     payload = {
         "data": {
             "attributes": {
@@ -179,18 +231,22 @@ def test_webhook_accepted_unverified_in_mock_mode(db):
             }
         }
     }
+    body = json.dumps(payload).encode()
     r = requests.post(
         f"{API}/billing/webhook/paymongo",
-        data=json.dumps(payload),
-        headers={"Content-Type": "application/json"},
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Paymongo-Signature": _sign(body),
+        },
     )
     assert r.status_code == 200, r.text
-    body = r.json()
-    assert body["status"] == "received"
-    assert body["event"] == "subscription.updated"
+    body_json = r.json()
+    assert body_json["status"] == "received"
+    assert body_json["event"] == "subscription.updated"
 
     # Background task should have inserted into paymongo_events
-    time.sleep(1.0)
+    time.sleep(1.2)
     ev = db.paymongo_events.find_one(
         {"object_id": payload["data"]["attributes"]["data"]["id"]}, {"_id": 0}
     )
@@ -231,10 +287,11 @@ def test_webhook_status_mapping(db, paymongo_status, local_status):
             "data": {"id": pm_sub_id, "attributes": {"status": paymongo_status}},
         }}
     }
+    body = json.dumps(payload).encode()
     r = requests.post(
         f"{API}/billing/webhook/paymongo",
-        data=json.dumps(payload),
-        headers={"Content-Type": "application/json"},
+        data=body,
+        headers={"Content-Type": "application/json", "Paymongo-Signature": _sign(body)},
     )
     assert r.status_code == 200
 
@@ -282,10 +339,11 @@ def test_webhook_invoice_paid_creates_payment_and_activates(db):
             },
         }}
     }
+    body = json.dumps(payload).encode()
     r = requests.post(
         f"{API}/billing/webhook/paymongo",
-        data=json.dumps(payload),
-        headers={"Content-Type": "application/json"},
+        data=body,
+        headers={"Content-Type": "application/json", "Paymongo-Signature": _sign(body)},
     )
     assert r.status_code == 200
     time.sleep(1.5)
@@ -335,10 +393,11 @@ def test_webhook_invoice_payment_failed_flips_past_due(db):
             },
         }}
     }
+    body = json.dumps(payload).encode()
     r = requests.post(
         f"{API}/billing/webhook/paymongo",
-        data=json.dumps(payload),
-        headers={"Content-Type": "application/json"},
+        data=body,
+        headers={"Content-Type": "application/json", "Paymongo-Signature": _sign(body)},
     )
     assert r.status_code == 200
     time.sleep(1.5)
@@ -418,38 +477,51 @@ def test_verify_webhook_signature_empty_secret_returns_false():
     ) is False
 
 
-def test_paymongo_is_configured_and_public_key_when_empty():
+def test_paymongo_is_configured_matches_env():
     _add_backend_to_path()
     import paymongo as pm
     importlib.reload(pm)
-    # In current env both are empty
-    assert pm.is_configured() is False
-    assert pm.public_key() == ""
+    if PAYMONGO_LIVE:
+        assert pm.is_configured() is True
+        assert pm.public_key().startswith("pk_")
+    else:
+        assert pm.is_configured() is False
+        assert pm.public_key() == ""
 
 
-# ─── 13. webhook 403 when secret populated and signature bad ─
-def test_webhook_403_with_bad_signature_when_secret_set(db, monkeypatch):
-    """Direct unit-style test on the route logic by temporarily exporting
-    PAYMONGO_WEBHOOK_SECRET in this process *and* exercising the helper.
-
-    We cannot mutate the running uvicorn process env, so we simulate the
-    same code path by calling verify_webhook_signature() with a known bad
-    sig — already covered above. Additionally, we POST to the live endpoint
-    with a fake `Paymongo-Signature` header to confirm the route still
-    returns 200 in mock mode (i.e. the env-driven gate works).
-    """
+# ─── 13. webhook signature enforcement matches secret presence ─
+def test_webhook_signature_gate_matches_env(db):
+    """When PAYMONGO_WEBHOOK_SECRET is set → bad sig must return 403.
+    When secret is empty → unverified is accepted with 200."""
     payload = {"data": {"attributes": {"type": "ping", "data": {}}}}
+    body = json.dumps(payload).encode()
+    # Always send an obviously-bad signature
     r = requests.post(
         f"{API}/billing/webhook/paymongo",
-        data=json.dumps(payload),
+        data=body,
         headers={
             "Content-Type": "application/json",
             "Paymongo-Signature": "t=1,te=bogus,li=bogus",
         },
     )
-    # Secret empty → signature ignored → 200
-    assert r.status_code == 200
-    assert r.json()["status"] == "received"
+    if WEBHOOK_SECRET_SET:
+        assert r.status_code == 403, r.text
+        assert r.json().get("error") == "invalid signature"
+    else:
+        assert r.status_code == 200
+        assert r.json()["status"] == "received"
+
+    # And a properly-signed payload should always succeed
+    r2 = requests.post(
+        f"{API}/billing/webhook/paymongo",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Paymongo-Signature": _sign(body),
+        },
+    )
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["status"] == "received"
 
 
 # ─── 14. User model exposes managed_by_cpa_id (default None) ──

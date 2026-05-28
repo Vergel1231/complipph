@@ -9,12 +9,25 @@ import uuid
 import pytest
 import requests
 import xml.etree.ElementTree as ET
+from pathlib import Path
+from dotenv import load_dotenv
 from pymongo import MongoClient
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://bir-filer.preview.emergentagent.com").rstrip("/")
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+
+def _read_frontend_backend_url() -> str:
+    text = Path("/app/frontend/.env").read_text()
+    for line in text.splitlines():
+        if line.startswith("REACT_APP_BACKEND_URL="):
+            return line.split("=", 1)[1].strip().strip('"').rstrip("/")
+    raise RuntimeError("REACT_APP_BACKEND_URL missing")
+
+
+BASE_URL = _read_frontend_backend_url()
 API = f"{BASE_URL}/api"
-ADMIN_EMAIL = "admin@birfilipino.app"
-ADMIN_PASSWORD = "Admin@2026"
+ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "test_database")

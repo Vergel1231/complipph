@@ -269,3 +269,81 @@ async def _process_webhook_event(db, event_type: str, inner: dict):
     elif event_type in ("payment.paid", "payment.failed"):
         # Surface these for audit; the checkout_session event is the canonical activator
         pass
+
+    # ─── Subscriptions API events (future activation path) ────
+    # If PayMongo activates the Subscriptions API on this merchant later, these
+    # `subscription.*` events will start firing alongside (or instead of) the
+    # `checkout_session.payment.paid` events. Handle them defensively so the
+    # billing layer is future-proof — no harm if they never fire.
+    elif event_type in ("subscription.activated", "subscription.updated"):
+        # `inner` is the subscription object; map upstream status → ours
+        new_status = (attrs.get("status") or "active").lower()
+        status_map = {
+            "active": "active",
+            "incomplete": "incomplete",
+            "past_due": "past_due",
+            "unpaid": "past_due",
+            "cancelled": "canceled",
+            "canceled": "canceled",
+            "incomplete_cancelled": "canceled",
+        }
+        local_status = status_map.get(new_status, new_status)
+        result = await db.subscriptions.update_one(
+            {"paymongo_subscription_id": inner_id},
+            {"$set": {"status": local_status}},
+        )
+        if result.matched_count:
+            sub = await db.subscriptions.find_one(
+                {"paymongo_subscription_id": inner_id}, {"_id": 0}
+            )
+            if sub:
+                user_update = {"subscription_status": local_status}
+                if local_status == "active":
+                    user_update["subscription_started_at"] = datetime.now(timezone.utc).isoformat()
+                await db.users.update_one(
+                    {"user_id": sub["user_id"]}, {"$set": user_update}
+                )
+
+    elif event_type == "subscription.invoice.paid":
+        subscription_id = attrs.get("subscription_id")
+        amount = attrs.get("amount") or 0
+        await db.paymongo_payments.insert_one({
+            "paymongo_subscription_id": subscription_id,
+            "invoice_id": inner_id,
+            "amount_php": amount / 100,
+            "currency": "PHP",
+            "status": "paid",
+            "received_at": datetime.now(timezone.utc).isoformat(),
+        })
+        if subscription_id:
+            await db.subscriptions.update_one(
+                {"paymongo_subscription_id": subscription_id},
+                {"$set": {"status": "active"}},
+            )
+            sub = await db.subscriptions.find_one(
+                {"paymongo_subscription_id": subscription_id}, {"_id": 0}
+            )
+            if sub:
+                await db.users.update_one(
+                    {"user_id": sub["user_id"]},
+                    {"$set": {
+                        "subscription_status": "active",
+                        "subscription_started_at": datetime.now(timezone.utc).isoformat(),
+                    }},
+                )
+
+    elif event_type == "subscription.invoice.payment_failed":
+        subscription_id = attrs.get("subscription_id")
+        if subscription_id:
+            await db.subscriptions.update_one(
+                {"paymongo_subscription_id": subscription_id},
+                {"$set": {"status": "past_due"}},
+            )
+            sub = await db.subscriptions.find_one(
+                {"paymongo_subscription_id": subscription_id}, {"_id": 0}
+            )
+            if sub:
+                await db.users.update_one(
+                    {"user_id": sub["user_id"]},
+                    {"$set": {"subscription_status": "past_due"}},
+                )

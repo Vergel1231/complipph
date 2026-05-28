@@ -91,35 +91,41 @@ async def on_startup():
     await db.paymongo_events.create_index("received_at")
     await db.paymongo_payments.create_index("paymongo_subscription_id")
 
-    # Seed admin
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@birfilipino.app")
-    admin_pw = os.environ.get("ADMIN_PASSWORD", "Admin@2026")
-    existing = await db.users.find_one({"email": admin_email})
-    if existing is None:
-        import uuid
-        await db.users.insert_one({
-            "user_id": f"u_{uuid.uuid4().hex[:14]}",
-            "email": admin_email,
-            "name": "Admin",
-            "auth_provider": "password",
-            "role": "admin",
-            "onboarded": True,
-            "subscription_status": "active",
-            "subscription_plan": "pro",
-            "password_hash": hash_password(admin_pw),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-        logger.info(f"Seeded admin user: {admin_email}")
-    elif not verify_password(admin_pw, existing["password_hash"]):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_pw), "role": "admin"}},
+    # Seed admin (only when both ADMIN_EMAIL and ADMIN_PASSWORD are explicitly set)
+    admin_email = os.environ.get("ADMIN_EMAIL", "").strip()
+    admin_pw = os.environ.get("ADMIN_PASSWORD", "")
+    if not admin_email or not admin_pw:
+        logger.error(
+            "ADMIN_EMAIL / ADMIN_PASSWORD not set — admin user will NOT be seeded. "
+            "Set both in .env before going to production."
         )
-        logger.info(f"Updated admin password for: {admin_email}")
-    elif existing.get("role") != "admin":
-        await db.users.update_one(
-            {"email": admin_email}, {"$set": {"role": "admin"}}
-        )
+    else:
+        existing = await db.users.find_one({"email": admin_email})
+        if existing is None:
+            import uuid
+            await db.users.insert_one({
+                "user_id": f"u_{uuid.uuid4().hex[:14]}",
+                "email": admin_email,
+                "name": "Admin",
+                "auth_provider": "password",
+                "role": "admin",
+                "onboarded": True,
+                "subscription_status": "active",
+                "subscription_plan": "pro",
+                "password_hash": hash_password(admin_pw),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+            logger.info(f"Seeded admin user: {admin_email}")
+        elif not verify_password(admin_pw, existing["password_hash"]):
+            await db.users.update_one(
+                {"email": admin_email},
+                {"$set": {"password_hash": hash_password(admin_pw), "role": "admin"}},
+            )
+            logger.info(f"Updated admin password for: {admin_email}")
+        elif existing.get("role") != "admin":
+            await db.users.update_one(
+                {"email": admin_email}, {"$set": {"role": "admin"}}
+            )
 
     logger.info("BIR Filipino API ready.")
 

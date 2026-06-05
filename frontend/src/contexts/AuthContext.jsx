@@ -4,7 +4,6 @@ import api from "../lib/api";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // null = checking, false = not authed, object = user
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,29 +21,26 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // CRITICAL: If returning from Emergent Google OAuth callback, skip /me check.
-    // AuthCallback page will exchange the session_id first.
-    if (typeof window !== "undefined" && window.location.hash?.includes("session_id=")) {
-      setLoading(false);
-      return;
-    }
     refresh();
   }, [refresh]);
 
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
+    if (data.access_token) localStorage.setItem("access_token", data.access_token);
     setUser(data);
     return data;
   };
 
   const register = async (email, password, name) => {
     const { data } = await api.post("/auth/register", { email, password, name });
+    if (data.access_token) localStorage.setItem("access_token", data.access_token);
     setUser(data);
     return data;
   };
 
   const logout = async () => {
     try { await api.post("/auth/logout"); } catch (_) {}
+    localStorage.removeItem("access_token");
     setUser(false);
   };
 

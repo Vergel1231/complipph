@@ -48,7 +48,6 @@ def create_refresh_token(user_id: str) -> str:
 
 
 def set_auth_cookies(response: Response, access: str, refresh: str):
-    # Cross-site cookies for preview environment (frontend & backend share host via ingress)
     response.set_cookie(
         key="access_token", value=access, httponly=True, secure=True,
         samesite="none", max_age=ACCESS_TTL_MIN * 60, path="/",
@@ -146,7 +145,7 @@ async def register(req: RegisterRequest, request: Request, response: Response):
     access = create_access_token(user.user_id, email)
     refresh = create_refresh_token(user.user_id)
     set_auth_cookies(response, access, refresh)
-    return user.model_dump(mode="json")
+    return {**user.model_dump(mode="json"), "access_token": access}
 
 
 @router.post("/login")
@@ -163,7 +162,7 @@ async def login(req: LoginRequest, request: Request, response: Response):
     set_auth_cookies(response, access, refresh)
     user_doc.pop("_id", None)
     user_doc.pop("password_hash", None)
-    return user_doc
+    return {**user_doc, "access_token": access}
 
 
 @router.post("/logout")
@@ -199,7 +198,7 @@ async def refresh_token(request: Request, response: Response):
             key="access_token", value=access, httponly=True, secure=True,
             samesite="none", max_age=ACCESS_TTL_MIN * 60, path="/",
         )
-        return {"ok": True}
+        return {"ok": True, "access_token": access}
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
@@ -211,7 +210,6 @@ class SessionExchange(BaseModel):
 
 @router.post("/google/session")
 async def google_session(payload: SessionExchange, request: Request, response: Response):
-    """Exchange a session_id from Emergent Google Auth for an app session."""
     db = request.app.state.db
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
@@ -228,7 +226,6 @@ async def google_session(payload: SessionExchange, request: Request, response: R
     picture = data.get("picture")
     session_token = data["session_token"]
 
-    # Upsert user
     user_doc = await db.users.find_one({"email": email})
     if not user_doc:
         new_user = User(email=email, name=name, picture=picture, auth_provider="google")
@@ -240,7 +237,6 @@ async def google_session(payload: SessionExchange, request: Request, response: R
         await db.users.update_one({"email": email}, {"$set": {"picture": picture}})
         user_doc["picture"] = picture
 
-    # Save session
     await db.user_sessions.update_one(
         {"session_token": session_token},
         {"$set": {
@@ -252,7 +248,6 @@ async def google_session(payload: SessionExchange, request: Request, response: R
         upsert=True,
     )
 
-    # Set httpOnly session cookie
     response.set_cookie(
         key="session_token", value=session_token, httponly=True, secure=True,
         samesite="none", max_age=7 * 86400, path="/",
@@ -262,7 +257,7 @@ async def google_session(payload: SessionExchange, request: Request, response: R
     return user_doc
 
 
-# ─── Forgot password (logs token to server) ─────────────────────
+# ─── Forgot / Reset password ─────────────────────────────────────
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
@@ -276,7 +271,6 @@ class ResetPasswordRequest(BaseModel):
 async def forgot_password(req: ForgotPasswordRequest, request: Request):
     db = request.app.state.db
     user = await db.users.find_one({"email": req.email.lower().strip()})
-    # Always return ok to avoid email enumeration
     if user and user.get("auth_provider") == "password":
         token = secrets.token_urlsafe(32)
         await db.password_reset_tokens.insert_one({
@@ -285,7 +279,6 @@ async def forgot_password(req: ForgotPasswordRequest, request: Request):
             "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
             "used": False,
         })
-        # In production: send via Resend. For MVP, log it.
         print(f"[PASSWORD_RESET_LINK] /reset?token={token}")
     return {"ok": True}
 

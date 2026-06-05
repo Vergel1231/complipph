@@ -60,8 +60,11 @@ api_router.include_router(billing_router)
 app.include_router(api_router)
 
 # CORS — explicit origin for credentialed requests, plus preview-host regex
-frontend_url = os.environ.get("FRONTEND_URL")
-allow_origins = [frontend_url] if frontend_url else []
+frontend_url = os.environ.get("FRONTEND_URL", "")
+cors_origins = os.environ.get("CORS_ORIGINS", "")
+allow_origins = list({
+    o.strip() for o in (frontend_url + "," + cors_origins).split(",") if o.strip()
+})
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,

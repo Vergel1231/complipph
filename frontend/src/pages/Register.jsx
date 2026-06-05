@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { formatApiError } from "@/lib/api";
-import { GoogleLogoIcon, ArrowRightIcon } from "@phosphor-icons/react";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 
 export default function Register() {
   const { register } = useAuth();
@@ -34,17 +34,11 @@ export default function Register() {
     }
   };
 
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-  const handleGoogle = () => {
-    const redirectUrl = window.location.origin + "/dashboard";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
-  };
-
   return (
     <div className="min-h-screen flex bg-sand-100">
       <div className="flex-1 grid place-items-center px-6 py-16">
         <div className="w-full max-w-md">
-          <Link to="/" className="inline-flex items-center gap-2 mb-12" data-testid="register-back-home-link">
+          <Link to="/" className="inline-flex items-center gap-2 mb-12">
             <div className="h-9 w-9 rounded-md bg-olive-600 grid place-items-center text-white font-display font-bold">B</div>
             <div className="font-display font-bold text-olive-900">BIR Filipino</div>
           </Link>
@@ -52,29 +46,12 @@ export default function Register() {
           <h1 className="font-display font-bold text-olive-900 text-4xl tracking-tight leading-tight mb-2">Create your account</h1>
           <p className="text-sand-700 mb-10">No spreadsheets. No calculator. Just your numbers.</p>
 
-          <Button
-            type="button"
-            onClick={handleGoogle}
-            variant="outline"
-            data-testid="register-google-button"
-            className="w-full bg-white border-sand-300 text-olive-900 hover:bg-sand-200 py-6 mb-6"
-          >
-            <GoogleLogoIcon size={20} weight="bold" /> Sign up with Google
-          </Button>
-
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-sand-300" />
-            <div className="text-xs tracking-widest uppercase text-sand-600 font-semibold">or with email</div>
-            <div className="flex-1 h-px bg-sand-300" />
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <Label htmlFor="name" className="text-olive-900 font-semibold">Full name</Label>
               <Input
                 id="name" type="text" required value={name}
                 onChange={(e) => setName(e.target.value)}
-                data-testid="register-name-input"
                 className="mt-2 bg-white border-sand-300 py-6"
                 placeholder="Maria Reyes"
               />
@@ -84,7 +61,6 @@ export default function Register() {
               <Input
                 id="email" type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                data-testid="register-email-input"
                 className="mt-2 bg-white border-sand-300 py-6"
                 placeholder="you@example.com"
               />
@@ -94,7 +70,6 @@ export default function Register() {
               <Input
                 id="password" type="password" required value={password} minLength={8}
                 onChange={(e) => setPassword(e.target.value)}
-                data-testid="register-password-input"
                 className="mt-2 bg-white border-sand-300 py-6"
                 placeholder="At least 8 characters"
               />
@@ -102,7 +77,6 @@ export default function Register() {
             <Button
               type="submit"
               disabled={busy}
-              data-testid="register-submit-button"
               className="w-full bg-olive-600 hover:bg-olive-700 text-white py-6"
             >
               {busy ? "Creating account..." : (<>Create account <ArrowRightIcon size={18} /></>)}
@@ -111,7 +85,7 @@ export default function Register() {
 
           <p className="mt-8 text-sm text-sand-700">
             Already have an account?{" "}
-            <Link to="/login" className="text-olive-700 font-semibold hover:text-olive-900 underline" data-testid="register-login-link">
+            <Link to="/login" className="text-olive-700 font-semibold hover:text-olive-900 underline">
               Log in
             </Link>
           </p>

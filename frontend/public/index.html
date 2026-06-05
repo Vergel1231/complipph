@@ -10,9 +10,14 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
         <title>CompliPH</title>
         <script>
-var r=sessionStorage.redirect;
-delete sessionStorage.redirect;
-if(r&&r!=location.href)history.replaceState(null,null,r);
+(function(l){
+  if(l.search[1]==='/' ){
+    var decoded=l.search.slice(1).split('&').map(function(s){ return s.replace(/~and~/g,'&') });
+    window.history.replaceState(null,null,
+      l.pathname.slice(0,-1)+decoded[0]+(decoded[1]?'?'+decoded[1]:'')+l.hash
+    );
+  }
+}(window.location))
 </script>
     </head>
     <body>

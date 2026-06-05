@@ -1,9 +1,8 @@
-"""AI Tax Assistant powered by Claude Sonnet 4.5 via Emergent LLM key."""
+"""AI Tax Assistant powered by Claude via Anthropic API."""
 import os
+import httpx
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request, Depends, HTTPException
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-
 from auth import get_current_user
 from models import ChatRequest
 
@@ -39,16 +38,42 @@ async def chat(req: ChatRequest, request: Request, user=Depends(get_current_user
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="LLM key not configured")
-    session_id = f"{user['user_id']}:{req.session_id}"
-    chat_client = LlmChat(
-        api_key=api_key,
-        session_id=session_id,
-        system_message=SYSTEM_PROMPT,
-    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+    # Fetch recent history for context (last 10 messages)
+    cursor = db.ai_messages.find(
+        {"user_id": user["user_id"], "session_id": req.session_id},
+        {"_id": 0},
+    ).sort("created_at", 1).limit(10)
+    history = await cursor.to_list(10)
+
+    messages = []
+    for msg in history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": req.message})
+
     try:
-        response = await chat_client.send_message(UserMessage(text=req.message))
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-haiku-4-5",
+                    "max_tokens": 1024,
+                    "system": SYSTEM_PROMPT,
+                    "messages": messages,
+                },
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            response_text = data["content"][0]["text"]
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {e}")
+
     # Persist chat log
     await db.ai_messages.insert_many([
         {
@@ -62,11 +87,11 @@ async def chat(req: ChatRequest, request: Request, user=Depends(get_current_user
             "user_id": user["user_id"],
             "session_id": req.session_id,
             "role": "assistant",
-            "content": response,
+            "content": response_text,
             "created_at": datetime.now(timezone.utc).isoformat(),
         },
     ])
-    return {"response": response}
+    return {"response": response_text}
 
 
 @router.get("/history/{session_id}")

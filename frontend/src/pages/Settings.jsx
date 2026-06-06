@@ -80,14 +80,14 @@ export default function Settings() {
                 <div><span className="text-sand-600">Status:</span> <strong className="text-olive-900">{sub.status}</strong></div>
                 <div><span className="text-sand-600">Provider:</span> <strong className="text-olive-900">{sub.provider} (PayMongo swap-ready)</strong></div>
               </div>
-              <Button variant="outline" onClick={cancelSub} data-testid="cancel-subscription-button" className="border-terracotta-500 text-terracotta-700 hover:bg-terracotta-50">
+              <Button variant="outline" onClick={cancelSub} className="border-terracotta-500 text-terracotta-700 hover:bg-terracotta-50">
                 Cancel subscription
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
               <p className="text-sand-700 text-sm">No active subscription. Subscribe to keep your filing history & deadline reminders.</p>
-              <Button onClick={() => window.location.href = "/pricing"} data-testid="go-to-pricing-button" className="bg-olive-600 hover:bg-olive-700 text-white">
+              <Button onClick={() => window.location.href = "/complipph/pricing"} className="bg-olive-600 hover:bg-olive-700 text-white">
                 See plans
               </Button>
             </div>
@@ -103,26 +103,25 @@ export default function Settings() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <Label className="text-olive-900 font-semibold">Legal name</Label>
-                <Input value={profile.legal_name || ""} onChange={(e) => setProfile({ ...profile, legal_name: e.target.value })} data-testid="settings-legal-name-input" className="mt-2 bg-white border-sand-300 py-6" />
+                <Input value={profile.legal_name || ""} onChange={(e) => setProfile({ ...profile, legal_name: e.target.value })} className="mt-2 bg-white border-sand-300 py-6" />
               </div>
               <div>
                 <Label className="text-olive-900 font-semibold">Trade name</Label>
-                <Input value={profile.trade_name || ""} onChange={(e) => setProfile({ ...profile, trade_name: e.target.value })} data-testid="settings-trade-name-input" className="mt-2 bg-white border-sand-300 py-6" />
+                <Input value={profile.trade_name || ""} onChange={(e) => setProfile({ ...profile, trade_name: e.target.value })} className="mt-2 bg-white border-sand-300 py-6" />
               </div>
               <div>
                 <Label className="text-olive-900 font-semibold">TIN</Label>
-                <Input value={profile.tin || ""} onChange={(e) => setProfile({ ...profile, tin: e.target.value })} data-testid="settings-tin-input" className="mt-2 bg-white border-sand-300 py-6 tabular-nums" />
+                <Input value={profile.tin || ""} onChange={(e) => setProfile({ ...profile, tin: e.target.value })} className="mt-2 bg-white border-sand-300 py-6 tabular-nums" />
               </div>
               <div>
                 <Label className="text-olive-900 font-semibold">RDO Code</Label>
-                <Input value={profile.rdo_code || ""} onChange={(e) => setProfile({ ...profile, rdo_code: e.target.value })} data-testid="settings-rdo-input" className="mt-2 bg-white border-sand-300 py-6 tabular-nums" />
+                <Input value={profile.rdo_code || ""} onChange={(e) => setProfile({ ...profile, rdo_code: e.target.value })} className="mt-2 bg-white border-sand-300 py-6 tabular-nums" />
               </div>
               <div>
                 <Label className="text-olive-900 font-semibold">Taxpayer Classification</Label>
                 <select
                   value={profile.taxpayer_classification}
                   onChange={(e) => setProfile({ ...profile, taxpayer_classification: e.target.value })}
-                  data-testid="settings-classification-select"
                   className="mt-2 w-full rounded-md border border-sand-300 bg-white px-3 py-3 text-olive-900"
                 >
                   <option value="8_percent_flat">8% Flat Tax</option>
@@ -130,12 +129,12 @@ export default function Settings() {
                 </select>
               </div>
               <label className="flex items-center gap-3 mt-7">
-                <input type="checkbox" checked={profile.is_vat_registered} onChange={(e) => setProfile({ ...profile, is_vat_registered: e.target.checked })} data-testid="settings-vat-checkbox" className="h-5 w-5 rounded border-sand-400 text-olive-600" />
+                <input type="checkbox" checked={profile.is_vat_registered} onChange={(e) => setProfile({ ...profile, is_vat_registered: e.target.checked })} className="h-5 w-5 rounded border-sand-400 text-olive-600" />
                 <span className="text-olive-900 text-sm font-medium">VAT-registered</span>
               </label>
             </div>
             <div className="mt-8">
-              <Button onClick={save} disabled={busy} data-testid="settings-save-button" className="bg-olive-600 hover:bg-olive-700 text-white px-6 py-5">
+              <Button onClick={save} disabled={busy} className="bg-olive-600 hover:bg-olive-700 text-white px-6 py-5">
                 {busy ? "Saving…" : "Save changes"}
               </Button>
             </div>

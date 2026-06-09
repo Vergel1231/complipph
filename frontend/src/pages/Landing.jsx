@@ -19,14 +19,15 @@ export default function Landing() {
       <header className="sticky top-0 z-40 bg-sand-100/85 backdrop-blur-xl border-b border-sand-300">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2" data-testid="landing-logo-link">
-            <div className="h-9 w-9 rounded-md bg-olive-600 grid place-items-center text-white font-display font-bold">B</div>
-            <div className="font-display font-bold text-olive-900 text-lg">BIR Filipino</div>
+            <div className="h-9 w-9 rounded-md bg-olive-600 grid place-items-center text-white font-display font-bold">C</div>
+            <div className="font-display font-bold text-olive-900 text-lg">CompliPH</div>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-sand-800">
             <a href="#how" className="hover:text-olive-900">How it works</a>
             <a href="#why" className="hover:text-olive-900">Why us</a>
             <Link to="/pricing" className="hover:text-olive-900" data-testid="landing-pricing-link">Pricing</Link>
             <a href="#cpas" className="hover:text-olive-900">For CPAs</a>
+            <Link to="/faq" className="hover:text-olive-900">FAQ</Link>
           </nav>
           <div className="flex items-center gap-3">
             {user ? (
@@ -145,7 +146,7 @@ export default function Landing() {
             { n: "01", icon: UsersThreeIcon, title: "Set up your business profile", body: "Tell us your taxpayer classification — 8% flat or graduated. We lock in the right forms and schedule." },
             { n: "02", icon: SparkleIcon, title: "Type your numbers", body: "Gross sales, expenses, withholdings. Our engine maps each peso to the correct BIR line — never opens a calculator." },
             { n: "03", icon: FileTextIcon, title: "Download & submit", body: "Get a pre-filled 1701Q or 2551Q. We track the deadline, notify you 30/7/1 day ahead, and archive every filing." },
-          ].map((s, i) => (
+          ].map((s) => (
             <div
               key={s.n}
               className="bg-white rounded-2xl border border-sand-200 p-8 hover:border-olive-600 transition-all duration-300"
@@ -288,15 +289,15 @@ export default function Landing() {
         <div className="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-9 w-9 rounded-md bg-terracotta-500 grid place-items-center text-white font-display font-bold">B</div>
-              <div className="font-display font-bold text-white text-lg">BIR Filipino</div>
+              <div className="h-9 w-9 rounded-md bg-terracotta-500 grid place-items-center text-white font-display font-bold">C</div>
+              <div className="font-display font-bold text-white text-lg">CompliPH</div>
             </div>
             <p className="text-sm text-sand-400 max-w-sm">
               The solo professional's tool that generates your BIR form in 60 seconds.
             </p>
           </div>
           <div className="text-sm">
-            © {new Date().getFullYear()} BIR Filipino. Made in Manila.
+            © {new Date().getFullYear()} CompliPH. Made in Manila.
           </div>
         </div>
       </footer>

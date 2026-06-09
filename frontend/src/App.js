@@ -15,6 +15,7 @@ import AIAssistant from "@/pages/AIAssistant";
 import Settings from "@/pages/Settings";
 import Pricing from "@/pages/Pricing";
 import Admin from "@/pages/Admin";
+import FAQ from "@/pages/FAQ";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+            <Route path="/faq" element={<FAQ />} />
           </Routes>
           <Toaster richColors position="top-right" />
         </AuthProvider>

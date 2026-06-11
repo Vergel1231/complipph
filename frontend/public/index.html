@@ -1,27 +1,31 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#000000" />
-        <meta name="description" content="CompliPH — BIR tax compliance for Filipino professionals" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
-        <title>CompliPH</title>
-        <script>
-(function(l){
-  if(l.search[1]==='/' ){
-    var decoded=l.search.slice(1).split('&').map(function(s){ return s.replace(/~and~/g,'&') });
-    window.history.replaceState(null,null,
-      l.pathname.slice(0,-1)+decoded[0]+(decoded[1]?'?'+decoded[1]:'')+l.hash
-    );
-  }
-}(window.location))
-</script>
-    </head>
-    <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
-        <div id="root"></div>
-    </body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f0e8" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="CompliPH — BIR tax compliance for Filipino professionals" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
+    <title>CompliPH</title>
+    <script>
+      (function(l){
+        if(l.search[1]==='/' ){
+          var decoded=l.search.slice(1).split('&').map(function(s){ return s.replace(/~and~/g,'&') });
+          window.history.replaceState(null,null,
+            l.pathname.slice(0,-1)+decoded[0]+(decoded[1]?'?'+decoded[1]:'')+l.hash
+          );
+        }
+      }(window.location))
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
 </html>

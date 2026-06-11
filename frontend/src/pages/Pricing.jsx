@@ -28,10 +28,8 @@ export default function Pricing() {
     try {
       const { data } = await api.post("/billing/checkout", { plan });
       if (data.redirect_url) {
-        // PayMongo hosted checkout: Card / GCash / GrabPay / Maya
         window.location.href = data.redirect_url;
       } else {
-        // Mock fallback (keys empty)
         toast.success(data.message || "Subscribed!");
         navigate("/dashboard");
       }
@@ -53,10 +51,21 @@ export default function Pricing() {
       <header className="border-b border-sand-300 bg-sand-100/85 backdrop-blur-xl">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2" data-testid="pricing-logo-link">
-            <div className="h-9 w-9 rounded-md bg-olive-600 grid place-items-center text-white font-display font-bold">B</div>
-            <div className="font-display font-bold text-olive-900">BIR Filipino</div>
+            <div className="h-9 w-9 rounded-md bg-olive-600 grid place-items-center text-white font-display font-bold">C</div>
+            <div className="font-display font-bold text-olive-900">CompliPH</div>
           </Link>
-          <Link to={user ? "/dashboard" : "/login"} className="text-sm font-medium text-olive-800 hover:text-olive-900" data-testid="pricing-account-link">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-sand-800">
+            <Link to="/" className="hover:text-olive-900">Home</Link>
+            <Link to="/faq" className="hover:text-olive-900">FAQ</Link>
+            <Link to={user ? "/dashboard" : "/login"} className="hover:text-olive-900" data-testid="pricing-account-link">
+              {user ? "Dashboard" : "Log in"}
+            </Link>
+          </nav>
+          <Link
+            to={user ? "/dashboard" : "/login"}
+            className="md:hidden text-sm font-medium text-olive-800 hover:text-olive-900"
+            data-testid="pricing-account-link-mobile"
+          >
             {user ? "Dashboard" : "Log in"}
           </Link>
         </div>
@@ -68,7 +77,7 @@ export default function Pricing() {
           Pay less than one freelancer hour. Save four every quarter.
         </h1>
         <p className="mt-6 text-lg text-sand-700 max-w-2xl mx-auto">
-          Monthly billing in PHP (PayMongo) or USD (Stripe — coming soon for diaspora users).
+          Monthly billing in PHP via PayMongo. GCash, GrabPay, Maya, and cards accepted.
         </p>
       </section>
 
@@ -120,7 +129,11 @@ export default function Pricing() {
       </section>
 
       <section className="bg-olive-900 text-sand-50 py-14 text-center">
-        <p className="font-display text-xl">Questions? Email <a href="mailto:hello@birfilipino.app" className="underline">hello@birfilipino.app</a></p>
+        <p className="font-display text-xl">
+          Questions? Email <a href="mailto:hello@complipph.app" className="underline">hello@complipph.app</a>
+          {" "}or{" "}
+          <Link to="/faq" className="underline">read the FAQ</Link>
+        </p>
       </section>
     </div>
   );

@@ -27,6 +27,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/generate" element={<ProtectedRoute><FormGenerator /></ProtectedRoute>} />
@@ -35,7 +36,6 @@ function App() {
             <Route path="/assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-            <Route path="/faq" element={<FAQ />} />
           </Routes>
           <Toaster richColors position="top-right" />
         </AuthProvider>

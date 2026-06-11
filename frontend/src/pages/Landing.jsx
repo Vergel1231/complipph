@@ -94,6 +94,11 @@ export default function Landing() {
             <div className="flex items-center gap-2"><CheckCircleIcon size={18} className="text-olive-600" /> Deadline reminders</div>
             <div className="flex items-center gap-2"><CheckCircleIcon size={18} className="text-olive-600" /> AI tax assistant</div>
           </div>
+          <div className="mt-4 md:hidden">
+            <Link to="/faq" className="text-sm text-olive-700 font-medium underline underline-offset-2">
+              Have questions? Read the FAQ →
+            </Link>
+          </div>
         </div>
         <div className="lg:col-span-5 relative">
           <div className="relative rounded-2xl overflow-hidden border border-sand-300 shadow-sm">

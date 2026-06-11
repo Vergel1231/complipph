@@ -34,9 +34,10 @@ export default function Login() {
       <div className="flex-1 grid place-items-center px-6 py-16">
         <div className="w-full max-w-md">
           <Link to="/" className="inline-flex items-center gap-2 mb-12">
-            <div className="h-9 w-9 rounded-md bg-olive-600 grid place-items-center text-white font-display font-bold">B</div>
-            <div className="font-display font-bold text-olive-900">BIR Filipino</div>
+            <div className="h-9 w-9 rounded-md bg-olive-600 grid place-items-center text-white font-display font-bold">C</div>
+            <div className="font-display font-bold text-olive-900">CompliPH</div>
           </Link>
+
           <div className="text-xs tracking-[0.25em] uppercase font-bold text-terracotta-600 mb-3">Welcome back</div>
           <h1 className="font-display font-bold text-olive-900 text-4xl tracking-tight leading-tight mb-2">Log in</h1>
           <p className="text-sand-700 mb-10">Continue where your last filing left off.</p>
@@ -70,7 +71,7 @@ export default function Login() {
           </form>
 
           <p className="mt-8 text-sm text-sand-700">
-            New to BIR Filipino?{" "}
+            New to CompliPH?{" "}
             <Link to="/register" className="text-olive-700 font-semibold hover:text-olive-900 underline">
               Create an account
             </Link>

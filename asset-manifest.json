@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/complipph/static/css/main.b777ff7e.css",
-    "main.js": "/complipph/static/js/main.800cfe91.js",
+    "main.css": "/complipph/static/css/main.fdf49a06.css",
+    "main.js": "/complipph/static/js/main.221d402d.js",
     "index.html": "/complipph/index.html",
-    "main.b777ff7e.css.map": "/complipph/static/css/main.b777ff7e.css.map",
-    "main.800cfe91.js.map": "/complipph/static/js/main.800cfe91.js.map"
+    "main.fdf49a06.css.map": "/complipph/static/css/main.fdf49a06.css.map",
+    "main.221d402d.js.map": "/complipph/static/js/main.221d402d.js.map"
   },
   "entrypoints": [
-    "static/css/main.b777ff7e.css",
-    "static/js/main.800cfe91.js"
+    "static/css/main.fdf49a06.css",
+    "static/js/main.221d402d.js"
   ]
 }
